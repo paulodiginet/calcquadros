@@ -1,0 +1,325 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Calculadora de Preços 2026</title>
+  <style>
+    :root {
+      --bg:#0b0f14; --card:#121826; --muted:#9aa4b2; --text:#e6eaf0;
+      --accent:#4f8cff; --danger:#ff5d5d; --ok:#5dff9c;
+      --border:rgba(255,255,255,.08);
+    }
+    body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; background:var(--bg); color:var(--text); }
+    .wrap { max-width:860px; margin:0 auto; padding:18px; }
+    h1 { font-size:18px; margin:0 0 10px; font-weight:700; }
+    .card { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:14px; box-shadow:0 10px 30px rgba(0,0,0,.25); }
+    .grid { display:grid; grid-template-columns: repeat(12, 1fr); gap:10px; }
+    label { font-size:12px; color:var(--muted); display:block; margin-bottom:6px; }
+    input, select {
+      width:100%; box-sizing:border-box; padding:12px 10px; border-radius:12px;
+      border:1px solid var(--border); background:#0f1522; color:var(--text);
+      outline:none;
+    }
+    input:focus, select:focus { border-color: rgba(79,140,255,.55); }
+    .col-6 { grid-column: span 6; }
+    .col-4 { grid-column: span 4; }
+    .col-12 { grid-column: span 12; }
+    .btn {
+      cursor:pointer; border:none; border-radius:12px; padding:12px 12px;
+      background:var(--accent); color:white; font-weight:700; width:100%;
+    }
+    .btn:active { transform: translateY(1px); }
+    .meta { font-size:12px; color:var(--muted); line-height:1.35; }
+    .pill {
+      display:inline-block; padding:6px 10px; border-radius:999px; font-size:12px;
+      border:1px solid var(--border); background:rgba(255,255,255,.03); color:var(--muted);
+    }
+    .row { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+    .out {
+      font-size:28px; font-weight:800; letter-spacing:-.02em; margin:6px 0 8px;
+    }
+    .warn { color: var(--danger); font-weight:700; }
+    .good { color: var(--ok); font-weight:700; }
+    .hr { height:1px; background:var(--border); margin:12px 0; }
+    @media (max-width: 640px) {
+      .col-6, .col-4 { grid-column: span 12; }
+      .out { font-size:26px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Calculadora de Preço de Quadros</h1>
+
+    <div class="card">
+      <div class="grid">
+        <div class="col-6">
+          <label for="w">Largura (cm)</label>
+          <input id="w" inputmode="numeric" placeholder="Ex.: 60" />
+        </div>
+        <div class="col-6">
+          <label for="h">Altura (cm)</label>
+          <input id="h" inputmode="numeric" placeholder="Ex.: 90" />
+        </div>
+
+        <div class="col-4">
+          <label for="linha">Linha</label>
+          <select id="linha">
+            <option value="B">Básico</option>
+            <option value="P">Premium</option>
+          </select>
+        </div>
+        <div class="col-4">
+          <label for="vidro">Vidro</label>
+          <select id="vidro">
+            <option value="SV">Sem vidro</option>
+            <option value="CV">Com vidro</option>
+          </select>
+        </div>
+        <div class="col-4">
+          <label for="modo">Modo</label>
+          <select id="modo">
+            <option value="auto">Automático</option>
+            <option value="forcar_tabela">Forçar tabela (somente se existir)</option>
+            <option value="forcar_formula">Forçar fórmula (somente se não existir na tabela)</option>
+          </select>
+        </div>
+
+        <div class="col-12">
+          <button class="btn" id="calc">Calcular</button>
+        </div>
+
+        <div class="col-12">
+          <div class="hr"></div>
+          <div class="row">
+            <span class="pill" id="tagTipo">Aguardando cálculo</span>
+            <span class="pill" id="tagRegras">Vidro: área até 2,20 m² e menor lado até 1,20 m</span>
+            <span class="pill" id="tagArred">Arredondamento: sempre para cima em múltiplos de R$ 5,00</span>
+          </div>
+          <div class="out" id="out">R$ 0,00</div>
+          <div class="meta" id="meta"></div>
+        </div>
+      </div>
+    </div>
+
+    <div style="height:12px"></div>
+
+    <div class="card">
+      <div class="meta">
+        <div><b>Regras usadas</b></div>
+        <ul>
+          <li><b>Lei do vidro</b>: permitido somente se área ≤ 2,20 m² e menor lado ≤ 1,20 m. Se não passar, vidro é bloqueado.</li>
+          <li><b>Tabela vence fórmula</b>: se o tamanho existir na tabela e tiver preço preenchido para a configuração, o sistema retorna o valor da tabela (padrão ou não padrão).</li>
+          <li><b>Fórmula</b>: só entra quando o tamanho não existir na tabela (ou quando você forçar fórmula). Usa curva baseada apenas nos padrões.</li>
+          <li><b>Não fabricamos</b>: se a célula estiver vazia na tabela, essa configuração é bloqueada (ex.: muito grande com vidro).</li>
+          <li><b>Preços</b>: sempre arredondados para cima no múltiplo de R$ 5,00.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+<script>
+  // =========================
+  // CONFIG (trocar só este bloco quando atualizar preços)
+  // =========================
+  // >>> BEGIN_TABELA_PRECOS
+  const TABELA_PRECOS = {"20x30": {"is_standard": true, "w_cm": 20, "h_cm": 30, "SV-B": 60.0, "CV-B": 75.0, "SV-P": 70.0, "CV-P": 85.0}, "30x40": {"is_standard": true, "w_cm": 30, "h_cm": 40, "SV-B": 95.0, "CV-B": 120.0, "SV-P": 110.0, "CV-P": 135.0}, "40x40": {"is_standard": true, "w_cm": 40, "h_cm": 40, "SV-B": 125.0, "CV-B": 160.0, "SV-P": 140.0, "CV-P": 175.0}, "40x60": {"is_standard": true, "w_cm": 40, "h_cm": 60, "SV-B": 155.0, "CV-B": 190.0, "SV-P": 175.0, "CV-P": 210.0}, "40x80": {"is_standard": true, "w_cm": 40, "h_cm": 80, "SV-B": 190.0, "CV-B": 230.0, "SV-P": 215.0, "CV-P": 255.0}, "50x50": {"is_standard": true, "w_cm": 50, "h_cm": 50, "SV-B": 185.0, "CV-B": 220.0, "SV-P": 205.0, "CV-P": 240.0}, "50x70": {"is_standard": true, "w_cm": 50, "h_cm": 70, "SV-B": 205.0, "CV-B": 230.0, "SV-P": 230.0, "CV-P": 255.0}, "60x60": {"is_standard": true, "w_cm": 60, "h_cm": 60, "SV-B": 235.0, "CV-B": 295.0, "SV-P": 260.0, "CV-P": 320.0}, "60x80": {"is_standard": true, "w_cm": 60, "h_cm": 80, "SV-B": 255.0, "CV-B": 330.0, "SV-P": 285.0, "CV-P": 360.0}, "60x90": {"is_standard": true, "w_cm": 60, "h_cm": 90, "SV-B": 280.0, "CV-B": 385.0, "SV-P": 310.0, "CV-P": 415.0}, "50x100": {"is_standard": false, "w_cm": 50, "h_cm": 100, "SV-B": 310.0, "CV-B": 430.0, "SV-P": 340.0, "CV-P": 460.0}, "60x120": {"is_standard": false, "w_cm": 60, "h_cm": 120, "SV-B": 455.0, "CV-B": 590.0, "SV-P": 495.0, "CV-P": 630.0}, "60x160": {"is_standard": false, "w_cm": 60, "h_cm": 160, "SV-B": 690.0, "CV-B": 910.0, "SV-P": 740.0, "CV-P": 960.0}, "70x90": {"is_standard": false, "w_cm": 70, "h_cm": 90, "SV-B": 375.0, "CV-B": 540.0, "SV-P": 415.0, "CV-P": 580.0}, "70x100": {"is_standard": true, "w_cm": 70, "h_cm": 100, "SV-B": 410.0, "CV-B": 590.0, "SV-P": 450.0, "CV-P": 630.0}, "70x130": {"is_standard": false, "w_cm": 70, "h_cm": 130, "SV-B": 560.0, "CV-B": 790.0, "SV-P": 600.0, "CV-P": 830.0}, "70x70": {"is_standard": false, "w_cm": 70, "h_cm": 70, "SV-B": 285.0, "CV-B": 350.0, "SV-P": 315.0, "CV-P": 380.0}, "80x80": {"is_standard": false, "w_cm": 80, "h_cm": 80, "SV-B": 380.0, "CV-B": 530.0, "SV-P": 420.0, "CV-P": 570.0}, "80x120": {"is_standard": true, "w_cm": 80, "h_cm": 120, "SV-B": 565.0, "CV-B": 795.0, "SV-P": 605.0, "CV-P": 835.0}, "80x160": {"is_standard": false, "w_cm": 80, "h_cm": 160, "SV-B": 790.0, "CV-B": 1050.0, "SV-P": 840.0, "CV-P": 1100.0}, "90x90": {"is_standard": false, "w_cm": 90, "h_cm": 90, "SV-B": 450.0, "CV-B": 650.0, "SV-P": 490.0, "CV-P": 690.0}, "90x130": {"is_standard": true, "w_cm": 90, "h_cm": 130, "SV-B": 660.0, "CV-B": 930.0, "SV-P": 710.0, "CV-P": 980.0}, "100x130": {"is_standard": false, "w_cm": 100, "h_cm": 130, "SV-B": 770.0, "CV-B": 1090.0, "SV-P": 820.0, "CV-P": 1140.0}, "100x100": {"is_standard": true, "w_cm": 100, "h_cm": 100, "SV-B": 570.0, "CV-B": 790.0, "SV-P": 610.0, "CV-P": 830.0}, "100x120": {"is_standard": false, "w_cm": 100, "h_cm": 120, "SV-B": 650.0, "CV-B": 990.0, "SV-P": 690.0, "CV-P": 1040.0}, "120x120": {"is_standard": false, "w_cm": 120, "h_cm": 120, "SV-B": 830.0, "CV-B": 1350.0, "SV-P": 880.0, "CV-P": 1400.0}, "100x150": {"is_standard": true, "w_cm": 100, "h_cm": 150, "SV-B": 990.0, "CV-B": 1390.0, "SV-P": 1040.0, "CV-P": 1440.0}, "90x180": {"is_standard": false, "w_cm": 90, "h_cm": 180, "SV-B": 1020.0, "CV-B": 1450.0, "SV-P": 1080.0, "CV-P": 1510.0}, "90x200": {"is_standard": false, "w_cm": 90, "h_cm": 200, "SV-B": 1120.0, "CV-B": 1650.0, "SV-P": 1180.0, "CV-P": 1710.0}, "100x200": {"is_standard": true, "w_cm": 100, "h_cm": 200, "SV-B": 1190.0, "CV-B": 1790.0, "SV-P": 1250.0, "CV-P": 1850.0}, "120x180": {"is_standard": false, "w_cm": 120, "h_cm": 180, "SV-B": 1550.0, "CV-B": null, "SV-P": 1610.0, "CV-P": null}, "140x190": {"is_standard": false, "w_cm": 140, "h_cm": 190, "SV-B": 1750.0, "CV-B": null, "SV-P": 1820.0, "CV-P": null}, "140x200": {"is_standard": false, "w_cm": 140, "h_cm": 200, "SV-B": 1800.0, "CV-B": null, "SV-P": 1870.0, "CV-P": null}, "140x230": {"is_standard": false, "w_cm": 140, "h_cm": 230, "SV-B": 2200.0, "CV-B": null, "SV-P": 2280.0, "CV-P": null}};
+  // <<< END_TABELA_PRECOS
+
+  // >>> BEGIN_BETAS
+  const BETAS = {"SV-B": [106.97678812981829, 771.3876178902368, -71.49573616603327], "CV-B": [186.75982429851834, 1279.7841675945926, -157.63082719491726], "SV-P": [103.20666580742444, 763.9885327646994, -58.297689800132964], "CV-P": [182.98970197612428, 1272.3850824690555, -144.4327808290169]};
+  // <<< END_BETAS
+
+  // Regras do vidro
+  const LIMITE_AREA_VIDRO = 2.20; // m²
+  const LIMITE_MENOR_LADO_VIDRO = 1.20; // m
+
+  // Taxas para tamanho não padrão (aplicadas somente quando NÃO existir na tabela)
+  const TAXA_NAO_PADRAO_POR_AREA = [
+    { max: 0.25, valor: 30 },
+    { max: 0.50, valor: 40 },
+    { max: 1.00, valor: 55 },
+    { max: 1.80, valor: 75 },
+    { max: Infinity, valor: 110 },
+  ];
+
+  // Extra quando for não padrão e com vidro (variável por área)
+  const EXTRA_VIDRO_NAO_PADRAO_POR_AREA = [
+    { max: 0.50, valor: 25 },
+    { max: 1.00, valor: 35 },
+    { max: 1.80, valor: 45 },
+    { max: Infinity, valor: 55 },
+  ];
+
+  // Arredondamento: múltiplos de R$ 5,00 sempre para cima
+  const MULT_ARRED = 5;
+
+  // =========================
+  // Helpers
+  // =========================
+  const brl = new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL', minimumFractionDigits:2 });
+
+  function toNumber(v) {
+    if (v === null || v === undefined) return NaN;
+    const s = String(v).trim().replace(',', '.');
+    const n = Number(s);
+    return Number.isFinite(n) ? n : NaN;
+  }
+
+  function keyFromCm(wCm, hCm) {
+    const a = Math.min(wCm, hCm);
+    const b = Math.max(wCm, hCm);
+    return `${a}x${b}`;
+  }
+
+  function arredondaParaCimaMultiplo(x, mult) {
+    return Math.ceil(x / mult) * mult;
+  }
+
+  function vidroPermitido(wM, hM) {
+    const area = wM * hM;
+    const menor = Math.min(wM, hM);
+    return (area <= LIMITE_AREA_VIDRO) && (menor <= LIMITE_MENOR_LADO_VIDRO);
+  }
+
+  function taxaNaoPadrao(area) {
+    for (const t of TAXA_NAO_PADRAO_POR_AREA) {
+      if (area <= t.max) return t.valor;
+    }
+    return 0;
+  }
+
+  function extraVidroNaoPadrao(area) {
+    for (const t of EXTRA_VIDRO_NAO_PADRAO_POR_AREA) {
+      if (area <= t.max) return t.valor;
+    }
+    return 0;
+  }
+
+  function calculaPorFormula(area, linear, tipo, linha) {
+    const k = `${tipo}-${linha}`; // SV-B, CV-P etc.
+    const beta = BETAS[k];
+    if (!beta) return NaN;
+    const [a,b,c] = beta;
+    return a + b*area + c*linear;
+  }
+
+  function setOut(preco, tipoTag, metaText, isWarn=false) {
+    document.getElementById('out').textContent = brl.format(preco);
+    const tag = document.getElementById('tagTipo');
+    tag.textContent = tipoTag;
+    tag.classList.remove('warn', 'good');
+    tag.classList.add(isWarn ? 'warn' : 'good');
+    document.getElementById('meta').innerHTML = metaText;
+  }
+
+  function bloqueioNaoFabricamos(vidro, linha) {
+    return `Não fabricamos este tamanho com <b>${vidro === 'CV' ? 'vidro' : 'sem vidro'}</b> na linha <b>${linha === 'B' ? 'Básico' : 'Premium'}</b>.`;
+  }
+
+  // =========================
+  // Main
+  // =========================
+  function calcular() {
+    const wCm = toNumber(document.getElementById('w').value);
+    const hCm = toNumber(document.getElementById('h').value);
+    const linha = document.getElementById('linha').value; // B/P
+    const vidro = document.getElementById('vidro').value; // SV/CV
+    const modo = document.getElementById('modo').value;
+
+    if (!Number.isFinite(wCm) || !Number.isFinite(hCm) || wCm <= 0 || hCm <= 0) {
+      setOut(0, 'Informe as medidas', 'Digite largura e altura em centímetros.', true);
+      return;
+    }
+
+    const wM = wCm / 100.0;
+    const hM = hCm / 100.0;
+    const area = wM * hM;
+    const linear = 2*(wM + hM);
+
+    // Lei do vidro sempre
+    if (vidro === 'CV' && !vidroPermitido(wM, hM)) {
+      setOut(0, 'Com vidro indisponível',
+        `Este tamanho não pode ser produzido com vidro. Regra: área até ${LIMITE_AREA_VIDRO.toFixed(2)} m² e menor lado até ${LIMITE_MENOR_LADO_VIDRO.toFixed(2)} m.<br>` +
+        `Sugestão: selecione "Sem vidro".`, true);
+      return;
+    }
+
+    const chave = keyFromCm(Math.round(wCm), Math.round(hCm));
+    const item = TABELA_PRECOS[chave] || null;
+    const col = `${vidro}-${linha}`;
+
+    // Modo: forçar tabela
+    if (modo === 'forcar_tabela') {
+      if (!item) {
+        setOut(0, 'Não existe na tabela', 'Este tamanho não está na tabela (nem padrão, nem não padrão).', true);
+        return;
+      }
+      if (item[col] === null) {
+        setOut(0, 'Não fabricamos', bloqueioNaoFabricamos(vidro, linha), true);
+        return;
+      }
+      const p = item[col];
+      setOut(p, item.is_standard ? 'Tabela (padrão)' : 'Tabela (não padrão)',
+        `Tamanho encontrado na tabela: <b>${item.w_cm}x${item.h_cm} cm</b>.<br>` +
+        `Configuração: <b>${vidro === 'CV' ? 'Com vidro' : 'Sem vidro'}</b>, linha <b>${linha === 'B' ? 'Básico' : 'Premium'}</b>.`);
+      return;
+    }
+
+    // Modo: forçar fórmula (só se não existir na tabela)
+    if (modo === 'forcar_formula') {
+      if (item) {
+        setOut(0, 'Existe na tabela', 'Este tamanho já existe na tabela. Para manter preços praticados, use o modo Automático ou Forçar tabela.', true);
+        return;
+      }
+      // cai para fórmula
+    }
+
+    // Automático: se existir na tabela e houver preço, retorna
+    if (item) {
+      if (item[col] === null) {
+        setOut(0, 'Não fabricamos', bloqueioNaoFabricamos(vidro, linha), true);
+        return;
+      }
+      const p = item[col];
+      setOut(p, item.is_standard ? 'Tabela (padrão)' : 'Tabela (não padrão)',
+        `Tamanho encontrado na tabela: <b>${item.w_cm}x${item.h_cm} cm</b>.<br>` +
+        `Configuração: <b>${vidro === 'CV' ? 'Com vidro' : 'Sem vidro'}</b>, linha <b>${linha === 'B' ? 'Básico' : 'Premium'}</b>.`);
+      return;
+    }
+
+    // Fórmula: tamanho novo
+    let base = calculaPorFormula(area, linear, vidro, linha);
+    if (!Number.isFinite(base)) {
+      setOut(0, 'Sem fórmula', 'Não foi possível calcular este preço. Verifique a configuração.', true);
+      return;
+    }
+
+    const taxa = taxaNaoPadrao(area);
+    const extraVidro = (vidro === 'CV') ? extraVidroNaoPadrao(area) : 0;
+    let total = base + taxa + extraVidro;
+
+    total = arredondaParaCimaMultiplo(total, MULT_ARRED);
+
+    const detalheTaxa = (taxa > 0 || extraVidro > 0)
+      ? `Taxa não padrão: <b>${brl.format(taxa)}</b>${vidro === 'CV' ? ` + extra vidro: <b>${brl.format(extraVidro)}</b>` : ''}.`
+      : 'Sem taxa de não padrão.';
+
+    setOut(total, 'Novo (fórmula)',
+      `Tamanho novo (não existe na tabela). Cálculo por fórmula (área e linear) + taxas.<br>` +
+      `Área: <b>${area.toFixed(2)} m²</b>. Linear: <b>${linear.toFixed(2)} m</b>.<br>` +
+      `Configuração: <b>${vidro === 'CV' ? 'Com vidro' : 'Sem vidro'}</b>, linha <b>${linha === 'B' ? 'Básico' : 'Premium'}</b>.<br>` +
+      `${detalheTaxa}<br>` +
+      `Arredondamento: sempre para cima no múltiplo de R$ 5,00.`);
+  }
+
+  document.getElementById('calc').addEventListener('click', calcular);
+  ['w','h'].forEach(id => {
+    document.getElementById(id).addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') calcular();
+    });
+  });
+</script>
+</body>
+</html>
