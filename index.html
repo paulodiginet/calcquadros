@@ -198,11 +198,11 @@
   const isGitHub = window.location.hostname.includes('github.io');
   const imagePath = isGitHub ? '/calcquadros/' : './';
   
-  // Ajustar imagem da logo
-  document.getElementById('brandLogo').src = imagePath + 'logo-idealize.png';
+  // Ajustar imagem da logo (com nomes corretos do GitHub)
+  document.getElementById('brandLogo').src = imagePath + 'Logo-Idealize.png';
   
-  // Ajustar favicon
-  document.getElementById('favicon').href = imagePath + 'icone.png';
+  // Ajustar favicon (com nomes corretos do GitHub)
+  document.getElementById('favicon').href = imagePath + 'Icone.png';
 
   // =========================
   // CONFIG - Dados de preços embutidos (com fallback para CSV externo)
@@ -414,7 +414,7 @@
 // Marca (para exibir na imagem copiada)
 // Fundo do app é escuro, então a versão negativa fica mais legível.
 const brandImg = new Image();
-brandImg.src = imagePath + "logo-idealize.png";
+brandImg.src = imagePath + "Logo-Idealize.png";
 const brandReady = new Promise((resolve) => {
   brandImg.onload = () => resolve(true);
   brandImg.onerror = () => resolve(false);
