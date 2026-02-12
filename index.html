@@ -104,7 +104,7 @@
 }
 
   </style>
-  <link rel="icon" type="image/png" href="icone.png" />
+  <link rel="icon" type="image/png" id="favicon" href="icone.png" />
 </head>
 <body>
   <div class="wrap">
@@ -193,13 +193,16 @@
 <script>
 
   // =========================
-  // Detectar ambiente (local vs GitHub Pages)
+  // Detectar ambiente e ajustar caminhos das imagens
   // =========================
-  const basePath = window.location.pathname.includes('/calcquadros/') ? '/calcquadros/' : './';
+  const isGitHub = window.location.hostname.includes('github.io');
+  const imagePath = isGitHub ? '/calcquadros/' : './';
   
-  // Ajustar caminhos de imagens
-  document.getElementById('brandLogo').src = basePath + 'logo-idealize.png';
-  document.querySelector('link[rel="icon"]').href = basePath + 'icone.png';
+  // Ajustar imagem da logo
+  document.getElementById('brandLogo').src = imagePath + 'logo-idealize.png';
+  
+  // Ajustar favicon
+  document.getElementById('favicon').href = imagePath + 'icone.png';
 
   // =========================
   // CONFIG - Dados de preços embutidos (com fallback para CSV externo)
@@ -214,7 +217,7 @@
   // Função para carregar dados do CSV (tenta, mas usa fallback se falhar)
   async function loadPricingData(csvPath = 'precos.csv') {
     try {
-      const response = await fetch(basePath + csvPath);
+      const response = await fetch(csvPath);
       if (!response.ok) throw new Error('CSV não encontrado');
       const csvText = await response.text();
       
@@ -411,7 +414,7 @@
 // Marca (para exibir na imagem copiada)
 // Fundo do app é escuro, então a versão negativa fica mais legível.
 const brandImg = new Image();
-brandImg.src = basePath + "logo-idealize.png";
+brandImg.src = imagePath + "logo-idealize.png";
 const brandReady = new Promise((resolve) => {
   brandImg.onload = () => resolve(true);
   brandImg.onerror = () => resolve(false);
