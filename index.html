@@ -193,6 +193,15 @@
 <script>
 
   // =========================
+  // Detectar ambiente (local vs GitHub Pages)
+  // =========================
+  const basePath = window.location.pathname.includes('/calcquadros/') ? '/calcquadros/' : './';
+  
+  // Ajustar caminhos de imagens
+  document.getElementById('brandLogo').src = basePath + 'logo-idealize.png';
+  document.querySelector('link[rel="icon"]').href = basePath + 'icone.png';
+
+  // =========================
   // CONFIG - Dados de preços embutidos (com fallback para CSV externo)
   // =========================
   let TABELA_PRECOS = {};
@@ -205,7 +214,7 @@
   // Função para carregar dados do CSV (tenta, mas usa fallback se falhar)
   async function loadPricingData(csvPath = 'precos.csv') {
     try {
-      const response = await fetch(csvPath);
+      const response = await fetch(basePath + csvPath);
       if (!response.ok) throw new Error('CSV não encontrado');
       const csvText = await response.text();
       
@@ -402,7 +411,7 @@
 // Marca (para exibir na imagem copiada)
 // Fundo do app é escuro, então a versão negativa fica mais legível.
 const brandImg = new Image();
-brandImg.src = "logo-idealize.png";
+brandImg.src = basePath + "logo-idealize.png";
 const brandReady = new Promise((resolve) => {
   brandImg.onload = () => resolve(true);
   brandImg.onerror = () => resolve(false);
